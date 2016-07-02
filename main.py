@@ -17,6 +17,7 @@ app = Flask(__name__)
 @app.route('/')
 def home():
     logging.info("Flask client stimulator visits home.")
+    return "OK!"
 '''
 @app.route('/b/<ad_hoc_host>')
 def assign(ad_hoc_host):
