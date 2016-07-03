@@ -8,7 +8,7 @@ from NewDoc import NewDoc
 from AssignHost import AssignHost
 from UpdateWeather import UpdateWeather
 
-from flask import Flask
+from flask import Flask, request
 app = Flask(__name__)
 
 
@@ -16,9 +16,9 @@ app = Flask(__name__)
 def home():
     return "Everything's 200 OK."
 
-@app.route('/a/<ad_hoc_host>')
-def assign(ad_hoc_host):
-    AssignAction = AssignHost(Host=ad_hoc_host.split('+'))
+@app.route('/a', methods=['POST', 'GET'])
+def assign():
+    AssignAction = AssignHost(Host=request.form['host'].split('+') if request.method=='POST' else None)
     return AssignAction.do()
 
 @app.route('/newdoc')
@@ -43,13 +43,13 @@ class Scheduler(schedule.Scheduler):
     
     def __init__(self):
         schedule.Scheduler.__init__(self)
-        fc = app.test_client() # Flask client stimulator
+        fc = app.test_client() # Flask client emulator
         # Schedule uses the local timezone, i.e. CST for DaoCloud.
         self.every().friday.at("16:10").do(partial(fc.get,'/newdoc'))
         self.every().sunday.at("07:27").do(partial(fc.get,'/updateweather'))
         self.every().wednesday.at("07:27").do(partial(fc.get,'/updateweather'))
     
-    def run_sidelong(self, interval=1):
+    def run_alongside(self, interval=1):
         class ScheduleThread(threading.Thread):
             @classmethod
             def run(cls):
@@ -63,5 +63,5 @@ class Scheduler(schedule.Scheduler):
 
 if __name__ == '__main__':
     cron = Scheduler()
-    cron.run_sidelong(interval=60)
+    cron.run_alongside(interval=60)
     app.run(debug=False, host='0.0.0.0', port=80)
