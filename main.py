@@ -15,9 +15,9 @@ app = Flask(__name__)
 def home():
     return "Everything's 200 OK."
 
-@app.route('/a', methods=['POST', 'GET'])
+@app.route('/a')
 def assign():
-    AssignAction = AssignHost(Host=request.form['host'].split('+') if request.method=='POST' else None)
+    AssignAction = AssignHost(Host=request.args.get('host','').split(' '))
     return AssignAction.do()
 
 @app.route('/newdoc')
