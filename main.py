@@ -17,7 +17,7 @@ def home():
 
 @app.route('/a')
 def assign():
-    AssignAction = AssignHost(Host=request.args.get('host','').split(' '))
+    AssignAction = AssignHost(Host=request.args.get('host','').split()) # ''.split() => []
     return AssignAction.do()
 
 @app.route('/newdoc')
@@ -34,7 +34,7 @@ def updateweather():
 def handle_exception(e):
     tb = format_exc()
     app.logger.error(tb)
-    return "<pre>%s</pre>" % tb, e.code if hasattr(e,'code') else 500
+    return "<pre>%s</pre>" % tb, getattr(e,'code',500)
 
 
 
@@ -55,12 +55,12 @@ class Scheduler4AHA(Scheduler):
                 while 1:
                     self.run_pending()
                     sleep(self.idle_seconds())
+        sleep(3)
         td = ScheduleThread()
         td.start()
 
         
-
+cron = Scheduler4AHA()
+cron.run_alongside()
 if __name__ == '__main__':
-    cron = Scheduler4AHA()
-    cron.run_alongside()
-    app.run(debug=False, host='0.0.0.0', port=80)
+    app.run(host='0.0.0.0', port=80)
