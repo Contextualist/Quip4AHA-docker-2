@@ -77,7 +77,7 @@ class AssignHost(object):
         self.SID = []
         self.SNperB = []     # B[SN]
         #---------------------Host----------------------
-        self.Host = Host if not Host[0] else QuipClient4AHA.HOST
+        self.Host = Host if Host else QuipClient4AHA.HOST
         import random
         random.shuffle(self.Host)
         self.HostN = len(self.Host)
@@ -97,12 +97,9 @@ class AssignHost(object):
         self.client = QuipClient4AHA()
 
     def _std(self, d):
-        m = 0.00
-        for x in d: m += x
-        m = m / len(d)
-        s = 0.00
-        for x in d: s += ( x - m ) ** 2
-        return (s / len(d)) ** 0.5
+        s = 0
+        for x in d: s+=x*x
+        return (s*1.0 / len(d) - (sum(d)*1.0 / len(d))**2) ** 0.5
 
     def _AssignP(self, b, p):
         op = set(range(self.HostN))
