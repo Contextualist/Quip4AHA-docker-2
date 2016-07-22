@@ -1,15 +1,17 @@
 from traceback import format_exc
 from time import sleep
 from threading import Thread
-from schedule import Scheduler
 
+# cache for datetime.datetime is polluted
 from NewDoc import NewDoc
 from AssignHost import AssignHost
 from UpdateWeather import UpdateWeather
 
 from flask import Flask, request
-app = Flask(__name__)
+from schedule import Scheduler
 
+
+app = Flask(__name__)
 
 @app.route('/')
 def home():
@@ -43,7 +45,7 @@ class Scheduler4AHA(Scheduler):
     def __init__(self):
         Scheduler.__init__(self)
         fc = app.test_client() # Flask client emulator
-        # Schedule uses the local timezone, i.e. CST for DaoCloud.
+        # Schedule uses the local timezone, which has been polluted (CST)
         self.every().friday.at("16:10").do(fc.get, '/newdoc')
         self.every().sunday.at("07:27").do(fc.get, '/updateweather')
         self.every().wednesday.at("07:27").do(fc.get, '/updateweather')
