@@ -1,5 +1,5 @@
 '''
-Include a customized Quip client and some utilities.
+Include a customized Quip client, some utilities, and magic.
 
 NOTICE:  To update the broadcast structure, you need to update
          1) KEYWORD, 2) B_WEIGHT, 3) PN_PER_B;
@@ -7,8 +7,25 @@ NOTICE:  To update the broadcast structure, you need to update
          1) HOST.
 '''
 
-from time import time
-from datetime import datetime, timedelta, tzinfo
+import datetime
+
+class cst_datetime(datetime.datetime):
+    """to override local timezone by polluting the datetime cache"""
+    class CST(datetime.tzinfo):
+        utcoffset = lambda self, dt: datetime.timedelta(hours=8)
+        dst = lambda self, dt: datetime.timedelta(0)
+    
+    @classmethod
+    def now(cls, tz=CST()):
+        return plain_datetime.now(tz)
+    
+    @classmethod
+    def today(cls):
+        return plain_datetime.now(CST())
+
+plain_datetime, datetime.datetime = datetime.datetime, cst_datetime # override
+# cache for datetime.datetime is polluted
+
 from quip import QuipClient
 
 class QuipClient4AHA(QuipClient):
@@ -50,11 +67,6 @@ class QuipClient4AHA(QuipClient):
         return docID[0]
 
 class week(object):
-
-    class CST(tzinfo):
-        utcoffset = lambda self, dt: timedelta(hours=8)
-        dst = lambda self, dt: timedelta(0)
-    _cst_today = lambda self: datetime.now(CST())
     
     @classmethod
     def DaysTo(cls, TheDay, IgnoreToday=False):
@@ -67,7 +79,7 @@ class week(object):
         rel = {'last':-1, 'next':1}[argu[0].lower()]
         weekday = {'Monday':1, 'Tuesday':2, 'Wednesday':3, 'Thursday':4,
                    'Friday':5, 'Saturday':6, 'Sunday':7}[argu[1]]
-        today = cls._cst_today().isoweekday()
+        today = datetime.datetime.today().isoweekday()
         if IgnoreToday:
             return weekday - today + (rel*weekday<=rel*today) * rel * 7
         else:
@@ -80,7 +92,7 @@ class week(object):
             RecentWeekDay('last Friday') # <date object of 05-19>
             RecentWeekDay('next Wednesday') # <date object of 05-24>
         '''
-        return cls._cst_today().date() + timedelta(cls.DaysTo(TheDay,IgnoreToday))
+        return datetime.datetime.today().date() + datetime.timedelta(cls.DaysTo(TheDay,IgnoreToday))
 
 
 class InvalidOperation(Exception):
