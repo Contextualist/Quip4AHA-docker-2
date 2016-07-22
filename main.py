@@ -1,11 +1,10 @@
+from NewDoc import NewDoc # cache for datetime.datetime is polluted
+from AssignHost import AssignHost
+from UpdateWeather import UpdateWeather
+
 from traceback import format_exc
 from time import sleep
 from threading import Thread
-
-# cache for datetime.datetime is polluted
-from NewDoc import NewDoc
-from AssignHost import AssignHost
-from UpdateWeather import UpdateWeather
 
 from flask import Flask, request
 from schedule import Scheduler
