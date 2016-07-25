@@ -3,6 +3,7 @@ from AssignHost import AssignHost
 from UpdateWeather import UpdateWeather
 
 from traceback import format_exc
+from datetime import datetime
 from time import sleep
 from threading import Thread
 
@@ -34,7 +35,7 @@ def updateweather():
 @app.errorhandler(Exception)
 def handle_exception(e):
     tb = format_exc()
-    app.logger.error(tb)
+    app.logger.error(datetime.today().strftime('%m%d(%w)%H') + tb)
     return "<pre>%s</pre>" % tb, getattr(e,'code',500)
 
 
@@ -56,7 +57,6 @@ class Scheduler4AHA(Scheduler):
                 while 1:
                     self.run_pending()
                     sleep(self.idle_seconds())
-        sleep(3)
         td = ScheduleThread()
         td.start()
 
