@@ -21,7 +21,7 @@ class cst_datetime(datetime.datetime):
     
     @classmethod
     def today(cls):
-        return plain_datetime.now(CST())
+        return plain_datetime.now(cls.CST())
 
 plain_datetime, datetime.datetime = datetime.datetime, cst_datetime # override
 # cache for datetime.datetime is polluted
