@@ -26,12 +26,14 @@ class cst_datetime(datetime.datetime):
 plain_datetime, datetime.datetime = datetime.datetime, cst_datetime # override
 # cache for datetime.datetime is polluted
 
+
 from quip import QuipClient
 
 class QuipClient4AHA(QuipClient):
     """A customized Quip client using Harry's token and dedicated for AHA Broadcast."""
-    AHABC_ID = "PCeAOAQx6sO"
     DESKTOP_ID = "LHEAOAhm7YS" # Harry's private desktop.
+    AHALPHA_ID = "QdSAOAhbS9t" # for alpha test
+    AHABC_ID = AHALPHA_ID#"PCeAOAQx6sO"
     
     KEYWORD = ("Good Morning AHA",
                "Now for this week in history",
@@ -66,14 +68,17 @@ class QuipClient4AHA(QuipClient):
             raise InvalidOperation("Redundancy Error: More than one scripts for the next broadcast are found!", 409)
         return docID[0]
 
+
 class week(object):
     
     @classmethod
     def DaysTo(cls, TheDay, IgnoreToday=False):
         """Return the days to a specific day of last/next week.
         e.g. (assume today is May 24, Wed. IgnoreToday=False):
-            DaysTo('last Friday') # -5
-            DaysTo('next Wednesday') # 0
+          >>> week.DaysTo('last Friday')
+          -5
+          >>> week.DaysTo('next Wednesday')
+          0
         """
         argu = TheDay.split(' ')
         rel = {'last':-1, 'next':1}[argu[0].lower()]
@@ -89,14 +94,16 @@ class week(object):
     def RecentWeekDay(cls, TheDay, IgnoreToday=False):
         '''Return the date object for a specific day of last/next week.
         e.g. (assume today is May 24, Wed. IgnoreToday=False):
-            RecentWeekDay('last Friday') # <date object of 05-19>
-            RecentWeekDay('next Wednesday') # <date object of 05-24>
+          >>> repr(week.RecentWeekDay('last Friday'))
+          datetime.date(2017, 5, 19)
+          >>> repr(week.RecentWeekDay('next Wednesday'))
+          datetime.date(2017, 5, 24)
         '''
         return datetime.datetime.today().date() + datetime.timedelta(cls.DaysTo(TheDay,IgnoreToday))
 
 
 class InvalidOperation(Exception):
     """Exception for all actions that take place when the conditions are not fulfilled."""
-    def __init__(self, message, http_code=None):
+    def __init__(self, message, http_code=202):
         Exception.__init__(self, message)
-        self.code = http_code or 202
+        self.code = http_code
