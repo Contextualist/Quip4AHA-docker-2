@@ -3,6 +3,8 @@ from AssignHost import AssignHost
 from UpdateWeather import UpdateWeather
 
 from traceback import format_exc
+from logging import getLogger
+logger = getLogger('quip4aha')
 from datetime import datetime
 from time import sleep
 from threading import Thread
@@ -35,15 +37,8 @@ def updateweather():
 @app.errorhandler(Exception)
 def handle_exception(e):
     tb = format_exc()
-    app.logger.error(datetime.today().strftime('%m%d(%w)%H') + tb)
+    logger.error(datetime.today().strftime('%m%d(%w)%H {}').format(tb.replace('\n','\n--- ')))
     return "<pre>%s</pre>" % tb, getattr(e,'code',500)
-
-from logging import StreamHandler, ERROR
-from sys import stderr
-
-SysHandler = StreamHandler(stderr)
-SysHandler.setLevel(ERROR)
-app.logger.addHandler(SysHandler)
 
 
 class Scheduler4AHA(Scheduler):
