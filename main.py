@@ -38,6 +38,12 @@ def handle_exception(e):
     app.logger.error(datetime.today().strftime('%m%d(%w)%H') + tb)
     return "<pre>%s</pre>" % tb, getattr(e,'code',500)
 
+from logging import StreamHandler, ERROR
+from sys import stderr
+
+SysHandler = StreamHandler(stderr)
+SysHandler.setLevel(ERROR)
+app.logger.addHandler(SysHandler)
 
 
 class Scheduler4AHA(Scheduler):
@@ -56,7 +62,7 @@ class Scheduler4AHA(Scheduler):
             def run(cls):
                 while 1:
                     self.run_pending()
-                    sleep(self.idle_seconds())
+                    sleep(self.idle_seconds)
         td = ScheduleThread()
         td.start()
 
