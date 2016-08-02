@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-  
 '''
-Adapt to fit Flask in GAE
 NOTICE:  To update the broadcast structure or host list, go to quip4aha.py.
 
 Main idea: 
@@ -153,24 +152,23 @@ class AssignHost(object):
         ====================DOC CATCHER====================
         '''
         self.docID = self.client.get_latest_script_ID()
-        self.thread = self.client.get_thread(id=self.docID)
+        self.raw_doc = self.client.get_thread(id=self.docID)["html"]
         '''
-        #docURL = "Z0R5AhbLjUxu" # test doc 0309-c
-        docURL = "YHb8AyYLNgvi" # test doc 0309-cc
-        self.thread = self.client.get_thread(id=docURL)
-        self.docID = self.thread['thread']['id']
+        docURL = ... # test doc URL: [a-zA-Z0-9]{12}
+        thread = self.client.get_thread(id=docURL)
+        self.docID = self.thread['thread']['id'] # test doc id: [a-zA-Z0-9]{11}
         '''
         '''
         ====================DOC PRE-PROCESSOR====================
         extract SWordCount and SID
         '''
-        if self.thread["html"].find(r'<i>//')!=-1:
+        if self.raw_doc.find(r'<i>//')!=-1:
             raise InvalidOperation("Redundancy Warning: The script has already been divided and assigned!")
-        self.docHTML = self.thread["html"].decode('utf-8').encode('ascii', 'ignore') #clear all non-ascii
-        self.docHTML = re.sub(r'<h1.+<\/h1>', '', self.docHTML, count=1) #delete the header
+        clean_doc = self.raw_doc.decode('utf-8').encode('ascii', 'ignore') #clear all non-ascii
+        clean_doc = re.sub(r'<h1.+<\/h1>', '', clean_doc, count=1) #delete the header
         
         parser = MyHTMLParser(self.KeyWord, self.BN)
-        parser.feed(self.docHTML)
+        parser.feed(clean_doc)
         
         '''
         =====================SETTINGS====================
@@ -194,11 +192,16 @@ class AssignHost(object):
         '''
         ====================POST DIVISIONS====================
         '''
+        last_pos = 0
         for b in xrange(self.BN):
             for p in xrange(self.PNperB[b]):
                 if (p==0 or self.Ans_PAssign[b][p]!=self.Ans_PAssign[b][p-1]): #need not to care about cross block
-                    self.client.edit_document(thread_id=self.docID, content=r"<i>//%s</i>" % (self.Host[self.Ans_PAssign[b][p]]), format="html",
-                                         operation=self.client.BEFORE_SECTION, section_id=self.SID[b][self.Ans_CutSign[b][p]])
+                    m = re.compile(r"<p id='%s' class='line'>(.+?)</p>" % self.SID[b][self.Ans_CutSign[b][p]]).search(self.raw_doc, last_pos)
+                    orig_content = m.group(1)
+                    last_pos = m.end()
+                    self.client.edit_document(thread_id=self.docID,
+                                              content=r"<p class='line'><i>//%s</i><br/>%s</p>" % (self.Host[self.Ans_PAssign[b][p]], orig_content),
+                                              operation=self.client.REPLACE_SECTION, section_id=self.SID[b][self.Ans_CutSign[b][p]])
         return "Done!"
         
 if __name__=="__main__":
