@@ -7,24 +7,33 @@ NOTICE:  To update the broadcast structure, you need to update
          1) HOST.
 '''
 
+"""Override the local timezone by polluting modules time's and datetime's cache"""
+import time
 import datetime
 
-class cst_datetime(datetime.datetime):
-    """to override local timezone by polluting the datetime cache"""
-    class CST(datetime.tzinfo):
-        utcoffset = lambda self, dt: datetime.timedelta(hours=8)
-        dst = lambda self, dt: datetime.timedelta(0)
+class CST(datetime.tzinfo):
+    utcoffset = lambda self, dt: datetime.timedelta(hours=8)
+    dst = lambda self, dt: datetime.timedelta(0)
+cst = CST()
+
+def cst_time_localtime(secs=None):
+    secs = secs or time.time()
+    time.strptime(str(_datetime_datetime.fromtimestamp(secs, cst))[:-6], '%Y-%m-%d %H:%M:%S.%f')
+
+class cst_datetime_datetime(datetime.datetime):
     
     @classmethod
-    def now(cls, tz=CST()):
-        return plain_datetime.now(tz)
+    def now(cls, tz=cst):
+        return _datetime_datetime.now(tz)
     
     @classmethod
     def today(cls):
-        return plain_datetime.now(cls.CST())
+        return _datetime_datetime.now(cst)
 
-plain_datetime, datetime.datetime = datetime.datetime, cst_datetime # override
-# cache for datetime.datetime is polluted
+# override
+_time_localtime, time.localtime = time.localtime, cst_time_localtime
+_datetime_datetime, datetime.datetime = datetime.datetime, cst_datetime_datetime
+# cache for time and datetime is polluted
 
 
 from quip import QuipClient
