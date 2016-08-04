@@ -18,7 +18,7 @@ cst = CST()
 
 def cst_time_localtime(secs=None):
     secs = secs or time.time()
-    time.strptime(str(_datetime_datetime.fromtimestamp(secs, cst))[:-6], '%Y-%m-%d %H:%M:%S.%f')
+    return time.strptime(str(_datetime_datetime.fromtimestamp(secs, cst))[:-6], '%Y-%m-%d %H:%M:%S.%f')
 
 class cst_datetime_datetime(datetime.datetime):
     
