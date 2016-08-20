@@ -1,5 +1,5 @@
 '''
-Include a customized Quip client, some utilities, and magic.
+Include a customized Quip client, some utilities, and timezone setting.
 
 NOTICE:  To update the broadcast structure, you need to update
          1) KEYWORD, 2) B_WEIGHT, 3) PN_PER_B;
@@ -7,33 +7,16 @@ NOTICE:  To update the broadcast structure, you need to update
          1) HOST.
 '''
 
-"""Override the local timezone by polluting modules time's and datetime's cache"""
+"""Override the local timezone in the process environment"""
+import os
+os.environ['TZ'] = 'CST-08'
 import time
+try:
+    time.tzset() # for UNIX only
+except AttributeError:
+    pass
+
 import datetime
-
-class CST(datetime.tzinfo):
-    utcoffset = lambda self, dt: datetime.timedelta(hours=8)
-    dst = lambda self, dt: datetime.timedelta(0)
-cst = CST()
-
-def cst_time_localtime(secs=None):
-    secs = secs or time.time()
-    return time.strptime(str(_datetime_datetime.fromtimestamp(secs, cst))[:-6], '%Y-%m-%d %H:%M:%S.%f')
-
-class cst_datetime_datetime(datetime.datetime):
-    
-    @classmethod
-    def now(cls, tz=cst):
-        return _datetime_datetime.now(tz)
-    
-    @classmethod
-    def today(cls):
-        return _datetime_datetime.now(cst)
-
-# override
-_time_localtime, time.localtime = time.localtime, cst_time_localtime
-_datetime_datetime, datetime.datetime = datetime.datetime, cst_datetime_datetime
-# cache for time and datetime is polluted
 
 
 from quip import QuipClient
