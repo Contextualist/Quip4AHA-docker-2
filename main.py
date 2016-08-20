@@ -1,4 +1,4 @@
-from NewDoc import NewDoc # cache for datetime.datetime is polluted
+from NewDoc import NewDoc # quip4aha has set the CST timezone
 from AssignHost import AssignHost
 from UpdateWeather import UpdateWeather
 
@@ -46,7 +46,7 @@ class Scheduler4AHA(Scheduler):
     def __init__(self):
         Scheduler.__init__(self)
         fc = app.test_client() # Flask client emulator
-        # Schedule uses the local timezone, which has been polluted (CST)
+        # Schedule uses the local timezone, which has been set to CST.
         self.every().friday.at("16:10").do(fc.get, '/newdoc')
         self.every().sunday.at("07:27").do(fc.get, '/updateweather')
         self.every().wednesday.at("07:27").do(fc.get, '/updateweather')
@@ -57,7 +57,8 @@ class Scheduler4AHA(Scheduler):
             def run(cls):
                 while 1:
                     self.run_pending()
-                    sleep(self.idle_seconds)
+                    while self.idle_seconds > 0:
+                        sleep(self.idle_seconds)
         td = ScheduleThread()
         td.start()
 
