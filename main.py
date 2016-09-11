@@ -4,7 +4,8 @@ from UpdateWeather import UpdateWeather
 
 from traceback import format_exc
 from logging import getLogger
-logger = getLogger('quip4aha')
+import logging
+logging.basicConfig(level=logging.INFO)
 from datetime import datetime
 from time import sleep
 from threading import Thread
@@ -37,7 +38,7 @@ def updateweather():
 @app.errorhandler(Exception)
 def handle_exception(e):
     tb = format_exc()
-    logger.error(datetime.today().strftime('%m%d(%w)%H {}').format(tb.replace('\n','\n--- ')))
+    app.logger.error(datetime.today().strftime('%m%d(%w)%H {}').format(tb.replace('\n','\n--- ')))
     return "<pre>%s</pre>" % tb, getattr(e,'code',500)
 
 
