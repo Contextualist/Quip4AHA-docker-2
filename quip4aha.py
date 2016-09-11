@@ -25,7 +25,7 @@ class QuipClient4AHA(QuipClient):
     """A customized Quip client using Harry's token and dedicated for AHA Broadcast."""
     DESKTOP_ID = "LHEAOAhm7YS" # Harry's private desktop.
     AHALPHA_ID = "QdSAOAhbS9t" # for alpha test
-    AHABC_ID = AHALPHA_ID#"PCeAOAQx6sO"
+    AHABC_ID = "PCeAOAQx6sO"
     
     KEYWORD = ("Good Morning AHA",
                "Now for this week in history",
