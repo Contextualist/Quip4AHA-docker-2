@@ -11,9 +11,8 @@ class NewDoc(object):
         self.client = QuipClient4AHA()
 
     def do(self):
-        template = urllib2.urlopen("https://gist.githubusercontent.com/Contextualist/"
-                                   "e323408bf80ea76ab6125b6522d9a363/raw/"
-                                   "445465f2c71492c908dedad8bc1be644e9542e1b/AHABC_template.html").read()
+        template = urllib2.urlopen("https://gist.githubusercontent.com/Contextualist"
+                                   "/e323408bf80ea76ab6125b6522d9a363/raw").read()
         # Pastebin (http://pastebin.com/raw/3cLgvDXe) is walled :(
         # Although Gist is also walled, Gist raw works fine :)
         # In the template, &#8203; (or &#x200b;) stands for a place-holder for a blank <p>.
