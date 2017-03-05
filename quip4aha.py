@@ -37,9 +37,7 @@ class QuipClient4AHA(QuipClient):
     PN_PER_B = (1, 1, 2, 1, 2)
     
     def __init__(self):
-        QuipClient.__init__(self, 
-            access_token="Wk9EQU1BcDZFS04=|1483091850|CF037JVoITJPnAET8aHWnZwEZACvrIm7jtkRIQCaX3g=")
-            # Harry's access token.
+        QuipClient.__init__(self, access_token=os.environ['token'])
     
     def get_folder_AHABC(self):
         return self.get_folder(id=self.AHABC_ID)
