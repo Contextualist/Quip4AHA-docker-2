@@ -7,7 +7,7 @@ class UpdateWeather(object):
 
     SIMP = {'Clear':'sunny',
             'Mostly Cloudy':'mostly cloudy', 'Partly Cloudy':'partly cloudy', 'Overcast':'cloudy',
-            'Thunderstorm':'rainy', 'Chance of a Thunderstorm':'rainy', 'Rain':'rainy'}
+            'Thunderstorm':'rainy', 'Chance of a Thunderstorm':'rainy', 'Rain':'rainy', 'Chance of Rain':'rainy'}
     
     def __init__(self):
         self.NextNDay = 0
