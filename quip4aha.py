@@ -30,11 +30,10 @@ class QuipClient4AHA(QuipClient):
     KEYWORD = ("Good Morning AHA",
                "Now for this week in history",
                "In World News",
-               "Now for the fun facts",
                "In AHA News")
-    B_WEIGHT = (1.00, 1.30, 1.50, 1.20, 1.00)
+    B_WEIGHT = (1.00, 1.30, 1.50, 1.00)
     HOST = ["Edward", "Katherine", "Sissy", "Harry"]
-    PN_PER_B = (1, 1, 2, 1, 2)
+    PN_PER_B = (1, 1, 2, 2)
     
     def __init__(self):
         QuipClient.__init__(self, access_token=os.environ['token'])
