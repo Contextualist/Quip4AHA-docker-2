@@ -27,7 +27,7 @@ class UpdateWeather(object):
                                    "WunderStation only gives prediction for today and 3 days ahead. \n"
                                    "But it's {} days to next Wednesday.".format(self.NextNDay))
         response = json.loads(urllib2.urlopen(
-            "http://api.wunderground.com/api/01702baefa3fbf8e/forecast/q/CN/Guangzhou.json").read())
+            "http://api.wunderground.com/api/01702baefa3fbf8e/forecast/q/zmw:00000.1.59287.json").read())
         data = response['forecast']['simpleforecast']['forecastday'][self.NextNDay]
         self.Condition = self.SIMP.get(data['conditions'], data['conditions'].lower())
         self.RainPercentage = data['pop']
