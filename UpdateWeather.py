@@ -43,14 +43,14 @@ class UpdateWeather(object):
         '''
         ====================DATA EMBED====================
         '''
-        SID, date = re.search(
-            r"<p id='([a-zA-Z0-9]{11})'.*?>Good Morning AHA.+?Wednesday\, ([\w ]+)\..+?<\/p>", html).group(1,2)
-        ctx = ("<p class='line'>Good Morning AHA!<br/>"
+        SID, host, date = re.search(
+            r"<p id='([a-zA-Z0-9]{11})'.*?>(.*)Good Morning AHA.+?Wednesday\, ([\w ]+)\..+?<\/p>", html).group(1,2,3)
+        ctx = ("<p class='line'>{host}Good Morning AHA!<br/>"
                "It is Wednesday, {date}. "
                "The weather for today is {condition}. "
                "There is {rain_pc}% chance of rain. "
                "The high temperature today will be {t_c} degrees Celsius, which is {t_f} degrees Fahrenheit.</p>").format(
-                   date=date, condition=self.Condition,
+                   host=host, date=date, condition=self.Condition,
                    rain_pc='{} {}'.format('an' if self.RainPercentage==80 else 'a', self.RainPercentage),
                    t_c=self.TemperatureC, t_f=self.TemperatureF)
         
