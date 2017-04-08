@@ -1,41 +1,38 @@
-# -*- coding: utf-8 -*-  
-'''
+"""
 NOTICE:  To update the broadcast structure or host list, go to quip4aha.py.
-
-Main idea: 
+Main idea:
   i. group sections into portions
-  ii. then distribute the portions to each host, so that
-      a. the STD of hosts' word counts is minimized *future feature
-      b. the continuity is maximized
+  ii. then distribute the portions to each host, so that the STD of hosts' word counts is minimized
 B_   block(column)
 S_   section(paragraph)
 P_   portion(read by a host)
 _N   number, count
-For those who are new to Python, remember, 
+For those who are new to Python, remember,
 1. The index of a Python list starts with 0.
 2. Variables in Python are pointers. So to copy a list but not the
    address of the list, use a=copy.deepcopy(b), instead of a=b.
-Progress: Hope to improve efficiency of DISTRIBUTE
-'''
-
+"""
+from quip4aha import QuipClient4AHA, InvalidOperation
 from HTMLParser import HTMLParser
+import copy
 import re
 
+
 class MyHTMLParser(HTMLParser):
-    def __init__(self, KeyWord, BN):
+    def __init__(self, keyword, BN):
         HTMLParser.__init__(self)
-        self.__KeyWord = KeyWord
+        self.__KeyWord = keyword
         self.__BN = BN
         self.__BNNow = -1
         self.__SNNow = 0
-        self.__newline = 0 #when there are total two <p> and <br/> between two data, new section
+        self.__newline = 0  # when there are total two <p> and <br/> between two data, new section
         self.__SIDNow = ''
         self.SWordCount = []
         self.SID = []
 
     def handle_starttag(self, tag, attrs):
         if tag == "p":
-            self.__SIDNow = attrs[0][1] #extract the ID attr
+            self.__SIDNow = attrs[0][1]  # extract the ID attr
             self.__newline += 1
 
     def handle_startendtag(self, tag, attrs):
@@ -45,165 +42,125 @@ class MyHTMLParser(HTMLParser):
     def handle_data(self, data):
         wordcount = len(re.findall(r"\b\w+\b", data))
         if wordcount == 0: return 0
-        if (self.__BNNow+1<=self.__BN-1 and data.find(self.__KeyWord[self.__BNNow+1])!=-1):
-            self.__BNNow += 1 #new block
+        if self.__BNNow+1<=self.__BN-1 and data.find(self.__KeyWord[self.__BNNow+1])!=-1:
+            self.__BNNow += 1  # new block
             self.__SNNow = 0
             self.SWordCount += [[0]]
             self.SID += [[self.__SIDNow]]
-        elif self.__newline>=2:
-            self.__SNNow += 1 #new section
+        elif self.__newline >= 2:
+            self.__SNNow += 1  # new section
             self.SWordCount[self.__BNNow] += [0]
             self.SID[self.__BNNow] += [self.__SIDNow]
         self.SWordCount[self.__BNNow][self.__SNNow] += wordcount
         self.__newline = 0
 
-from quip4aha import QuipClient4AHA, InvalidOperation
-import copy
 
 class AssignHost(object):
 
     def __init__(self, KeyWord=QuipClient4AHA.KEYWORD, BWeight=QuipClient4AHA.B_WEIGHT,
                  Host=QuipClient4AHA.HOST, PNperB=QuipClient4AHA.PN_PER_B):
-        '''
-        ==================INITIALIATION==================
-        '''
-        #--------------------Block----------------------
+        # --------------------Block----------------------
         self.KeyWord = KeyWord
         self.BN = len(self.KeyWord)
-        self.BWeight = BWeight # B[]
-        #--------------------Section----------------------
+        self.BWeight = BWeight  # B[]
+        # --------------------Section----------------------
         self.SWordCount = []
         self.SID = []
         self.SNperB = []     # B[SN]
-        #---------------------Host----------------------
-        self.Host = Host if Host else QuipClient4AHA.HOST
+        # ---------------------Host----------------------
+        self.Host = Host or QuipClient4AHA.HOST
         import random
         random.shuffle(self.Host)
         self.HostN = len(self.Host)
         self.HostWordCount = [0.00] * self.HostN
-        self.Ans_HostWordCountSTD = 1000.00
-        #--------------------Portion----------------------
-        self.PNperB = PNperB # B[PN]
-        self.CutSign = [[0]*pn for pn in self.PNperB]
+        self.Ans_HostWordCountRange = 1000.00
+        # --------------------Portion----------------------
+        self.PNperB = PNperB  # B[PN]
         self.PWordCount = [[0]*pn for pn in self.PNperB]
-        self.PAssign = [[0]*pn for pn in self.PNperB]
-        self.IsBetterPDivision = 0
-        #self.Continuity = 0
+        self.CutSign = [[-1]*pn for pn in self.PNperB]
+        self.PAssign = [[-1]*pn for pn in self.PNperB]
         self.Ans_CutSign = []
         self.Ans_PAssign = []
-        #self.Ans_Continuity = 0
-        #----------------------DOC----------------------
+        # ----------------------DOC----------------------
         self.client = QuipClient4AHA()
 
-    def _std(self, d):
-        s = 0
-        for x in d: s+=x*x
-        return (s*1.0 / len(d) - (sum(d)*1.0 / len(d))**2) ** 0.5
+    def _check_solution(self):
+        v = max(self.HostWordCount) - min(self.HostWordCount)
+        if v < self.Ans_HostWordCountRange:
+            self.Ans_HostWordCountRange = v
+            self.Ans_CutSign, self.Ans_PAssign = copy.deepcopy(self.CutSign), copy.deepcopy(self.PAssign)
 
-    def _AssignP(self, b, p):
-        op = set(range(self.HostN))
-        if p == 0: #forbid the host to cross a block
-            op -= {self.PAssign[b-1][self.PNperB[b-1]-1]}
-        for i in op:
-            self.PAssign[b][p] = i
-            self.HostWordCount[i] += self.PWordCount[b][p]
-            #if (p!=0)&&(i!=self.PAssign[b][p-1]): self.Continuity += 1
-            if p == self.PNperB[b]-1:
-                if b == self.BN-1:
-                    t = self._std(self.HostWordCount)
-                    if t < self.Ans_HostWordCountSTD:
-                        self.Ans_HostWordCountSTD = t
-                        self.Ans_PAssign = copy.deepcopy(self.PAssign)
-                        self.IsBetterPDivision = 1
-                else:
-                    self._AssignP(b+1,0)
+    def _assign(self, b, s, last_assignee, lastp):
+        if b == self.BN:
+            self._check_solution()
+            return
+
+        next1s, wordsum1 = (s+1)%self.SNperB[b], self.SWordCount[b][s]
+        nextxs, wordsumx = 0, sum(self.SWordCount[b][s:])
+        for h in xrange(self.HostN):
+            if h == last_assignee:
+                if s == 0: continue  # cross block, no
+                p = lastp
             else:
-                self._AssignP(b,p+1)
-            self.HostWordCount[i] -= self.PWordCount[b][p]
+                p = lastp + 1
+                self.CutSign[b][p], self.PAssign[b][p] = s, h
 
-    def _GenerateP(self, b, p): #block 'b' from 'CutSign[b,p]+1' to the end start dividing the 'p'th sections
-        if p == self.PNperB[b]-1:
-            self.PWordCount[b][self.PNperB[b]-1] = sum(self.SWordCount[b][self.CutSign[b][p]:])
-            if b < self.BN-1:
-                self.CutSign[b+1][0] = 0
-                self._GenerateP(b+1,0)   #next B
-            else:
-                self.IsBetterPDivision = 0
-                self.HostWordCount = [0] * self.HostN
-                self.PAssign[0][0] = 0
-                self.HostWordCount[0] += self.PWordCount[0][0]
-                if self.PNperB[0]>1:
-                    self._AssignP(0, 1)
-                else: 
-                    self._AssignP(1, 0) #start assigning hosts
-                if self.IsBetterPDivision: 
-                    self.Ans_CutSign = copy.deepcopy(self.CutSign)
-        else:
-            self.PWordCount[b][p] = 0
-            for i in xrange(self.CutSign[b][p]+1,self.SNperB[b]):
-                self.PWordCount[b][p] += self.SWordCount[b][i-1]
-                self.CutSign[b][p+1] = i
-                self._GenerateP(b,p+1)
-
+            if p < self.PNperB[b]-1:
+                nexts, wordsum = next1s, wordsum1
+            else:  # reach the limit, take the rest
+                nexts, wordsum = nextxs, wordsumx
+            self.HostWordCount[h] += wordsum
+            self._assign(b+(nexts==0), nexts, h, -1 if nexts==0 else p)
+            self.HostWordCount[h] -= wordsum
 
     def do(self):
-        #raise InvalidOperation("The page is under construction. . .")
-        '''
-        ====================DOC CATCHER====================
-        '''
-        self.docID = self.client.get_latest_script_ID()
-        self.raw_doc = self.client.get_thread(id=self.docID)["html"]
+        # ====================DOC CATCHER====================
+        doc_id = self.client.get_latest_script_ID()
+        raw_doc = self.client.get_thread(id=doc_id)["html"]
         '''
         docURL = ... # test doc URL: [a-zA-Z0-9]{12}
         thread = self.client.get_thread(id=docURL)
-        self.docID = self.thread['thread']['id'] # test doc id: [a-zA-Z0-9]{11}
+        doc_id = self.thread['thread']['id'] # test doc id: [a-zA-Z0-9]{11}
         '''
-        '''
-        ====================DOC PRE-PROCESSOR====================
-        extract SWordCount and SID
-        '''
-        if self.raw_doc.find(r'<i>//')!=-1:
+
+        # ====================DOC PRE-PROCESSOR====================
+        if raw_doc.find(r'<i>//') != -1:
             raise InvalidOperation("Redundancy Warning: The script has already been divided and assigned!")
-        clean_doc = self.raw_doc.decode('utf-8').encode('ascii', 'ignore') #clear all non-ascii
-        clean_doc = re.sub(r'<h1.+<\/h1>', '', clean_doc, count=1) #delete the header
-        
+        clean_doc = raw_doc.decode('utf-8').encode('ascii', 'ignore')  # clear all non-ascii
+        clean_doc = re.sub(r'<h1.+</h1>', '', clean_doc, count=1)  # delete the header
+
         parser = MyHTMLParser(self.KeyWord, self.BN)
         parser.feed(clean_doc)
-        
-        '''
-        =====================SETTINGS====================
-        '''    
+
+        # =====================SETTINGS====================
         self.SWordCount = parser.SWordCount
-        self.SWordCount = [[swc*self.BWeight[b] for swc in self.SWordCount[b]] for b in xrange(self.BN)] # B[S[]], weighted
+        self.SWordCount = [[swc*self.BWeight[b] for swc in self.SWordCount[b]] for b in xrange(self.BN)]  # B[S[]], weighted
         self.SID = parser.SID
-        self.SNperB = [len(b) for b in self.SWordCount]     # B[SN]
-        for i in xrange(self.BN):
-            if self.PNperB[i] > self.SNperB[i]: self.PNperB[i] = self.SNperB[i]
-        self.CutSign[0][0] = 0
-        
-        '''
-        ====================DISTRIBUTE(S->P)====================
-        '''
-        self._GenerateP(0, 0)
-        #    CutSign =   [[0],   [0],     [],       , []] # B[P[SN]] generated first
-        #    PWordCount =[ ,      ,   [],       , []] # B[P[]] generated first
-        #        PAssign =   [[0],   [1],     [],       , []] # B[P[Host]] subsequent
-        
-        '''
-        ====================POST DIVISIONS====================
-        '''
+        self.SNperB = [len(b) for b in self.SWordCount]  # B[SN]
+        self.PNperB = [min(self.PNperB[i], self.SNperB[i]) for i in xrange(self.BN)]
+
+        # ====================DISTRIBUTE(S->P)====================
+        self.CutSign[0][0], self.PAssign[0][0] = 0, 0
+        self.HostWordCount[0] += self.SWordCount[0][0]
+        if self.PNperB[0] > 1:
+            self._assign(0, 1, 0, 0)
+        else:
+            self._assign(1, 0, 0, -1)
+
+        # ====================POST DIVISIONS====================
         last_pos = 0
         for b in xrange(self.BN):
             for p in xrange(self.PNperB[b]):
-                if (p==0 or self.Ans_PAssign[b][p]!=self.Ans_PAssign[b][p-1]): #need not to care about cross block
-                    m = re.compile(r"<p id='%s' class='line'>(.+?)</p>" % self.SID[b][self.Ans_CutSign[b][p]]).search(self.raw_doc, last_pos)
-                    orig_content = m.group(1)
-                    last_pos = m.end()
-                    self.client.edit_document(thread_id=self.docID,
-                                              content=r"<p class='line'><i>//%s</i><br/>%s</p>" % (self.Host[self.Ans_PAssign[b][p]], orig_content),
-                                              operation=self.client.REPLACE_SECTION, section_id=self.SID[b][self.Ans_CutSign[b][p]])
+                if self.Ans_CutSign[b][p] == -1:
+                    break
+                m = re.compile(r"<p id='%s' class='line'>(.+?)</p>" % self.SID[b][self.Ans_CutSign[b][p]]).search(raw_doc, last_pos)
+                orig_content = m.group(1)
+                last_pos = m.end()
+                self.client.edit_document(thread_id=doc_id,
+                                          content=r"<p class='line'><i>//%s</i><br/>%s</p>" % (self.Host[self.Ans_PAssign[b][p]], orig_content),
+                                          operation=self.client.REPLACE_SECTION, section_id=self.SID[b][self.Ans_CutSign[b][p]])
         return "Done!"
-        
-if __name__=="__main__":
+
+if __name__ == "__main__":
     AssignAction = AssignHost()
     AssignAction.do()
