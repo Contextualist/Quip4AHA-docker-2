@@ -6,7 +6,7 @@ class NewDoc(object):
     def __init__(self):
         NextWednesday = week.RecentWeekDay('next Wednesday')
         self.NextWednesdayN = NextWednesday.strftime("%m%d")
-        self.NextWednesdayS = NextWednesday.strftime("%B %-d")
+        self.NextWednesdayS = NextWednesday.strftime("%B %d").replace(" 0", " ")
         self.ctx = ""
         self.client = QuipClient4AHA()
 
