@@ -1,15 +1,16 @@
 '''
 Include a customized Quip client, some utilities, and timezone setting.
 
-NOTICE:  To update the broadcast structure, you need to update
-         1) KEYWORD, 2) B_WEIGHT, 3) PN_PER_B;
-         To update the host list, you need to update
+NOTICE:  To update the host list, you need to update
          1) HOST.
 '''
 
 """Override the local timezone in the process environment"""
 import os
 os.environ['TZ'] = 'CST-08'
+import sys
+import getopt
+import json
 import time
 try:
     time.tzset() # for UNIX only
@@ -22,21 +23,13 @@ import datetime
 from quip import QuipClient
 
 class QuipClient4AHA(QuipClient):
-    """A customized Quip client using Harry's token and dedicated for AHA Broadcast."""
-    DESKTOP_ID = "LHEAOAhm7YS" # Harry's private desktop.
-    AHALPHA_ID = "QdSAOAhbS9t" # for alpha test
-    AHABC_ID = "PCeAOAQx6sO"
+    """A customized Quip client dedicated for AHA Broadcast."""
     
-    KEYWORD = ("Good Morning AHA",
-               "Now for this week in history",
-               "In World News",
-               "In AHA News")
-    B_WEIGHT = (1.00, 1.30, 1.50, 1.00)
     HOST = ["Edward", "Katherine", "Sissy", "Harry"]
-    PN_PER_B = (1, 1, 2, 2)
     
-    def __init__(self):
+    def __init__(self, conf):
         QuipClient.__init__(self, access_token=os.environ['token'])
+        self.AHABC_ID = conf["folder_id"]
     
     def get_folder_AHABC(self):
         return self.get_folder(id=self.AHABC_ID)
@@ -56,6 +49,38 @@ class QuipClient4AHA(QuipClient):
         if len(docID) > 1:
             raise InvalidOperation("Redundancy Error: More than one scripts for the next broadcast are found!", 409)
         return docID[0]
+
+
+def parse_config():
+    conffile = ''
+    opts, _ = getopt.getopt(sys.argv[1:], 'c:', ['config='])
+    for k, v in opts:
+        if k in ('-c', '--config'):
+            conffile = v
+
+    for p in ([conffile] if conffile else [])+["./config.json", "/etc/q4a/config.json"]:
+        if os.path.exists(p):
+            conffile = p
+            confpath = os.path.dirname(conffile)
+            break
+    else:
+        print "config file not found, exit."
+        sys.exit(1)
+    with open(conffile, "rb") as f:
+        try:
+            config = json.loads(f.read().decode('utf8'))
+        except ValueError as e:
+            print ('found an error while parsing config.json: %s' % e.message)
+            sys.exit(1)
+
+    tplfile = config.get("template", confpath+"/template.html")
+    if not os.path.exists(tplfile):
+        print "template file not found, exit."
+        sys.exit(1)
+    with open(tplfile, "rb") as f:
+        template = f.read().decode('utf8')
+
+    return config, template
 
 
 class week(object):
@@ -96,3 +121,6 @@ class InvalidOperation(Exception):
     def __init__(self, message, http_code=202):
         Exception.__init__(self, message)
         self.code = http_code
+
+config, template = parse_config()
+q4a = QuipClient4AHA(config)

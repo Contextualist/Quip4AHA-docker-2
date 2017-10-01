@@ -1,7 +1,7 @@
 import re
 import json
 import urllib2
-from quip4aha import QuipClient4AHA, week, InvalidOperation
+from quip4aha import q4a, week, InvalidOperation
 
 class UpdateWeather(object):
 
@@ -15,7 +15,7 @@ class UpdateWeather(object):
         self.RainPercentage = ''
         self.TemperatureC = ''
         self.TemperatureF = ''
-        self.client = QuipClient4AHA()
+        self.client = q4a
         
     def do(self):
         '''

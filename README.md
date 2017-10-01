@@ -10,10 +10,14 @@ The scripts call [Quip](https://quip.com) API though [its official Python librar
 
 ### Run with Docker
 ```
-docker run -d -p 80:80 -e "token={Quip_API_token}" contextualist/quip4aha
+docker run -d \
+-p 80:80 \
+-e "token={Quip_API_token}" \
+-v /path/to/configs:/etc/q4a \
+contextualist/quip4aha
 ```
 
 ### History
-2016.04 The [original project](https://github.com/Contextualist/Quip4AHA) was deployed on [GAE](https://cloud.google.com)
-2016.07 A strange bug of GAE disabled my updates. Transplanted the project to [DaoCloud](https://daocloud.io). Host on quip4aha.daoapp.io. 
-2017.09 Tired of DaoCloud's restrain, hosted on AHA's VPS.
+* 2016.04 The [original project](https://github.com/Contextualist/Quip4AHA) was deployed on [GAE](https://cloud.google.com)
+* 2016.07 A strange bug of GAE disabled my updates. Transplanted the project to [DaoCloud](https://daocloud.io). Host on quip4aha.daoapp.io. 
+* 2017.09 Tired of DaoCloud's restrain, hosted on AHA's VPS.

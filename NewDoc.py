@@ -1,5 +1,5 @@
 import urllib2
-from quip4aha import week, QuipClient4AHA, InvalidOperation
+from quip4aha import week, q4a, template, InvalidOperation
 
 class NewDoc(object):
 
@@ -8,16 +8,15 @@ class NewDoc(object):
         self.NextWednesdayN = NextWednesday.strftime("%m%d")
         self.NextWednesdayS = NextWednesday.strftime("%B %d").replace(" 0", " ")
         self.ctx = ""
-        self.client = QuipClient4AHA()
+        self.client = q4a
 
     def do(self):
-        template = urllib2.urlopen("https://gist.githubusercontent.com/Contextualist"
-                                   "/e323408bf80ea76ab6125b6522d9a363/raw").read()
+        #template = urllib2.urlopen("https://gist.githubusercontent.com/Contextualist"
+        #                           "/e323408bf80ea76ab6125b6522d9a363/raw").read()
         # Pastebin (http://pastebin.com/raw/3cLgvDXe) is walled :(
         # Although Gist is also walled, Gist raw works fine :)
         # In the template, &#8203; (or &#x200b;) stands for a place-holder for a blank <p>.
-        if template == "cancel":
-            raise InvalidOperation("The template indicates a cancelation for this week!")
+
         self.ctx = template.format(NextWednesdayS=self.NextWednesdayS)
         
         try:

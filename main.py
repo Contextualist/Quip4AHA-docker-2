@@ -22,7 +22,7 @@ def home():
 
 @app.route('/a')
 def assign():
-    AssignAction = AssignHost(Host=request.args.get('host','').split()) # ''.split() => []
+    AssignAction = AssignHost()
     return AssignAction.do()
 
 @app.route('/newdoc')
@@ -65,6 +65,7 @@ class Scheduler4AHA(Scheduler):
 
         
 cron = Scheduler4AHA()
-cron.run_alongside()
+
 if __name__ == '__main__':
+    cron.run_alongside()
     app.run(host='0.0.0.0', port=80)

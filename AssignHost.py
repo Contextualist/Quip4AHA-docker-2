@@ -12,7 +12,7 @@ For those who are new to Python, remember,
 2. Variables in Python are pointers. So to copy a list but not the
    address of the list, use a=copy.deepcopy(b), instead of a=b.
 """
-from quip4aha import QuipClient4AHA, InvalidOperation
+from quip4aha import q4a, config, InvalidOperation
 from HTMLParser import HTMLParser
 import copy
 import re
@@ -57,32 +57,31 @@ class MyHTMLParser(HTMLParser):
 
 class AssignHost(object):
 
-    def __init__(self, KeyWord=QuipClient4AHA.KEYWORD, BWeight=QuipClient4AHA.B_WEIGHT,
-                 Host=QuipClient4AHA.HOST, PNperB=QuipClient4AHA.PN_PER_B):
+    def __init__(self):
         # --------------------Block----------------------
-        self.KeyWord = KeyWord
+        self.KeyWord = [b['keyword'] for b in config['block']]
         self.BN = len(self.KeyWord)
-        self.BWeight = BWeight  # B[]
+        self.BWeight = [b['weight'] for b in config['block']]  # B[]
         # --------------------Section----------------------
         self.SWordCount = []
         self.SID = []
         self.SNperB = []     # B[SN]
         # ---------------------Host----------------------
-        self.Host = Host or QuipClient4AHA.HOST
+        self.Host = q4a.HOST # TODO: new assign scheme
         import random
         random.shuffle(self.Host)
         self.HostN = len(self.Host)
         self.HostWordCount = [0.00] * self.HostN
         self.Ans_HostWordCountRange = 1000.00
         # --------------------Portion----------------------
-        self.PNperB = PNperB  # B[PN]
+        self.PNperB = [b['portion'] for b in config['block']] # B[PN]
         self.PWordCount = [[0]*pn for pn in self.PNperB]
         self.CutSign = [[-1]*pn for pn in self.PNperB]
         self.PAssign = [[-1]*pn for pn in self.PNperB]
         self.Ans_CutSign = []
         self.Ans_PAssign = []
         # ----------------------DOC----------------------
-        self.client = QuipClient4AHA()
+        self.client = q4a
 
     def _check_solution(self):
         v = max(self.HostWordCount) - min(self.HostWordCount)
