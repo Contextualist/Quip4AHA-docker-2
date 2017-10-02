@@ -9,7 +9,7 @@ NOTICE:  To update the host list, you need to update
 import os
 os.environ['TZ'] = 'CST-08'
 import sys
-import getopt
+import argparse
 import json
 import time
 try:
@@ -52,13 +52,18 @@ class QuipClient4AHA(QuipClient):
 
 
 def parse_config():
-    conffile = ''
-    opts, _ = getopt.getopt(sys.argv[1:], 'c:', ['config='])
-    for k, v in opts:
-        if k in ('-c', '--config'):
-            conffile = v
+    psr = argparse.ArgumentParser()
+    psr.add_argument('-c', '--config')
+    psr.add_argument('-l', '--listen', default=':')
+    args = psr.parse_args()
 
-    for p in ([conffile] if conffile else [])+["./config.json", "/etc/q4a/config.json"]:
+    l = args.listen.split(':')
+    sysconf = {
+        'host': l[0] or '0.0.0.0',
+        'port': int(l[1] or '80')
+    }
+
+    for p in ([args.config] if args.config else [])+["./config.json", "/etc/q4a/config.json"]:
         if os.path.exists(p):
             conffile = p
             confpath = os.path.dirname(conffile)
@@ -80,7 +85,7 @@ def parse_config():
     with open(tplfile, "rb") as f:
         template = f.read().decode('utf8')
 
-    return config, template
+    return sysconf, config, template
 
 
 class week(object):
@@ -122,5 +127,5 @@ class InvalidOperation(Exception):
         Exception.__init__(self, message)
         self.code = http_code
 
-config, template = parse_config()
+sysconf, config, template = parse_config()
 q4a = QuipClient4AHA(config)

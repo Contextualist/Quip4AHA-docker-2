@@ -1,4 +1,5 @@
-from NewDoc import NewDoc # quip4aha has set the CST timezone
+from quip4aha import sysconf # quip4aha has set the CST timezone
+from NewDoc import NewDoc
 from AssignHost import AssignHost
 from UpdateWeather import UpdateWeather
 
@@ -68,4 +69,4 @@ cron = Scheduler4AHA()
 
 if __name__ == '__main__':
     cron.run_alongside()
-    app.run(host='0.0.0.0', port=80)
+    app.run(host=sysconf['host'], port=sysconf['port'])
