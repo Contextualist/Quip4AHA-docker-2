@@ -1,5 +1,4 @@
 """
-NOTICE:  To update the broadcast structure or host list, go to quip4aha.py.
 Main idea:
   i. group sections into portions
   ii. then distribute the portions to each host, so that the STD of hosts' word counts is minimized
@@ -16,6 +15,7 @@ from quip4aha import q4a, config, InvalidOperation
 from HTMLParser import HTMLParser
 import copy
 import re
+import itertools
 
 
 class MyHTMLParser(HTMLParser):
@@ -67,17 +67,22 @@ class AssignHost(object):
         self.SID = []
         self.SNperB = []     # B[SN]
         # ---------------------Host----------------------
-        self.Host = q4a.HOST # TODO: new assign scheme
-        import random
-        random.shuffle(self.Host)
-        self.HostN = len(self.Host)
-        self.HostWordCount = [0.00] * self.HostN
+        self.Host = []
+        self.HostN = 0
+        self.HostWordCount = []
         self.Ans_HostWordCountRange = 1000.00
+        # ---------------------Task----------------------
+        self.task = config['assign']
+        for t in self.task:
+            # flatten block range
+            t['range'] = list(itertools.chain.from_iterable(
+                          range(int(c[0]), int(c[1] if len(c)==2 else c[0])+1)
+                           for c in [c.split('-') for c in t['range'].split(',')]))
         # --------------------Portion----------------------
         self.PNperB = [b['portion'] for b in config['block']] # B[PN]
-        self.PWordCount = [[0]*pn for pn in self.PNperB]
-        self.CutSign = [[-1]*pn for pn in self.PNperB]
-        self.PAssign = [[-1]*pn for pn in self.PNperB]
+        self.PWordCount = []
+        self.CutSign = []
+        self.PAssign = []
         self.Ans_CutSign = []
         self.Ans_PAssign = []
         # ----------------------DOC----------------------
@@ -89,11 +94,12 @@ class AssignHost(object):
             self.Ans_HostWordCountRange = v
             self.Ans_CutSign, self.Ans_PAssign = copy.deepcopy(self.CutSign), copy.deepcopy(self.PAssign)
 
-    def _assign(self, b, s, last_assignee, lastp):
-        if b == self.BN:
+    def _assign(self, task_b, s, last_assignee, lastp):
+        if task_b == self.taskBN:
             self._check_solution()
             return
 
+        b = self.taskBtoB[task_b]
         next1s, wordsum1 = (s+1)%self.SNperB[b], self.SWordCount[b][s]
         nextxs, wordsumx = 0, sum(self.SWordCount[b][s:])
         for h in xrange(self.HostN):
@@ -102,14 +108,14 @@ class AssignHost(object):
                 p = lastp
             else:
                 p = lastp + 1
-                self.CutSign[b][p], self.PAssign[b][p] = s, h
+                self.CutSign[task_b][p], self.PAssign[task_b][p] = s, h
 
             if p < self.PNperB[b]-1:
                 nexts, wordsum = next1s, wordsum1
             else:  # reach the limit, take the rest
                 nexts, wordsum = nextxs, wordsumx
             self.HostWordCount[h] += wordsum
-            self._assign(b+(nexts==0), nexts, h, -1 if nexts==0 else p)
+            self._assign(task_b+(nexts==0), nexts, h, -1 if nexts==0 else p)
             self.HostWordCount[h] -= wordsum
 
     def do(self):
@@ -138,26 +144,41 @@ class AssignHost(object):
         self.SNperB = [len(b) for b in self.SWordCount]  # B[SN]
         self.PNperB = [min(self.PNperB[i], self.SNperB[i]) for i in xrange(self.BN)]
 
-        # ====================DISTRIBUTE(S->P)====================
-        self.CutSign[0][0], self.PAssign[0][0] = 0, 0
-        self.HostWordCount[0] += self.SWordCount[0][0]
-        if self.PNperB[0] > 1:
-            self._assign(0, 1, 0, 0)
-        else:
-            self._assign(1, 0, 0, -1)
+        for t in self.task:
+            # task hosts
+            self.Host = t['host']
+            import random
+            random.shuffle(self.Host)
+            self.HostN = len(self.Host)
+            self.HostWordCount = [0.00] * self.HostN
+            self.Ans_HostWordCountRange = 1000.00
+            # task blocks
+            self.taskBtoB = t['range']
+            self.taskBN = len(self.taskBtoB)
+            self.PWordCount = [[0]*self.PNperB[b] for b in self.taskBtoB]
+            self.CutSign = [[-1]*self.PNperB[b] for b in self.taskBtoB]
+            self.PAssign = [[-1]*self.PNperB[b] for b in self.taskBtoB]
+            # ====================DISTRIBUTE(S->P)====================
+            self.CutSign[0][0], self.PAssign[0][0] = 0, 0
+            self.HostWordCount[0] += self.SWordCount[self.taskBtoB[0]][0]
+            if self.PNperB[self.taskBtoB[0]] > 1:
+                self._assign(0, 1, 0, 0)
+            else:
+                self._assign(1, 0, 0, -1)
 
-        # ====================POST DIVISIONS====================
-        last_pos = 0
-        for b in xrange(self.BN):
-            for p in xrange(self.PNperB[b]):
-                if self.Ans_CutSign[b][p] == -1:
-                    break
-                m = re.compile(r"<p id='%s' class='line'>(.+?)</p>" % self.SID[b][self.Ans_CutSign[b][p]]).search(raw_doc, last_pos)
-                orig_content = m.group(1)
-                last_pos = m.end()
-                self.client.edit_document(thread_id=doc_id,
-                                          content=r"<p class='line'><i>//%s</i><br/>%s</p>" % (self.Host[self.Ans_PAssign[b][p]], orig_content),
-                                          operation=self.client.REPLACE_SECTION, section_id=self.SID[b][self.Ans_CutSign[b][p]])
+            # ====================POST DIVISIONS====================
+            last_pos = 0
+            for tb, b in enumerate(self.taskBtoB):
+                for p in xrange(self.PNperB[b]):
+                    if self.Ans_CutSign[tb][p] == -1:
+                        break
+                    m = re.compile(r"<p id='%s' class='line'>(.+?)</p>" % self.SID[b][self.Ans_CutSign[tb][p]]).search(raw_doc, last_pos)
+                    orig_content = m.group(1)
+                    last_pos = m.end()
+                    self.client.edit_document(thread_id=doc_id,
+                                              content=r"<p class='line'><i>//%s</i><br/>%s</p>" % (self.Host[self.Ans_PAssign[tb][p]], orig_content),
+                                              operation=self.client.REPLACE_SECTION, section_id=self.SID[b][self.Ans_CutSign[tb][p]])
+
         return "Done!"
 
 if __name__ == "__main__":
