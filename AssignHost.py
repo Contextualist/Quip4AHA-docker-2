@@ -114,7 +114,7 @@ class AssignHost(object):
 
     def do(self):
         # ====================DOC CATCHER====================
-        doc_id = self.client.get_latest_script_ID()
+        doc_id = self.client.latest_script_ID
         raw_doc = self.client.get_thread(id=doc_id)["html"]
         '''
         docURL = ... # test doc URL: [a-zA-Z0-9]{12}

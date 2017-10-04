@@ -22,6 +22,25 @@ import datetime
 
 from quip import QuipClient
 
+
+class weekly_cache(object):
+
+    def __init__(self, period):
+        self.__c = None
+        self.__period = period
+        self.__bestbefore = datetime.date.fromtimestamp(0)
+
+    def __call__(self, fn):
+
+        def cached_fn(*args, **kwargs):
+            if datetime.datetime.today().date() > self.__bestbefore:
+                self.__c = fn(*args, **kwargs)
+                self.__bestbefore = week.RecentWeekDay(self.__period)
+            return self.__c
+
+        return cached_fn
+
+
 class QuipClient4AHA(QuipClient):
     """A customized Quip client dedicated for AHA Broadcast."""
     
@@ -31,11 +50,14 @@ class QuipClient4AHA(QuipClient):
         QuipClient.__init__(self, access_token=os.environ['token'])
         self.AHABC_ID = conf["folder_id"]
     
-    def get_folder_AHABC(self):
+    @property
+    def folder_AHABC(self):
         return self.get_folder(id=self.AHABC_ID)
-    
-    def get_latest_script_ID(self):
-        AHABC = self.get_folder_AHABC()
+
+    @property
+    @weekly_cache('next Wednesday')
+    def latest_script_ID(self):
+        AHABC = self.folder_AHABC
         nxtwed = week.RecentWeekDay('next Wednesday')
         title = nxtwed.strftime('%m%d')
         #lstfri = [int(time.mktime(

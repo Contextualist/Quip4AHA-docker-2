@@ -20,7 +20,7 @@ class NewDoc(object):
         self.ctx = template.format(NextWednesdayS=self.NextWednesdayS)
         
         try:
-            self.client.get_latest_script_ID()
+            _ = self.client.latest_script_ID
         except InvalidOperation as e:
             if e.code == 409:
                 raise e # redundancy error
