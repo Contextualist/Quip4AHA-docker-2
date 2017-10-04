@@ -1,8 +1,5 @@
 '''
 Include a customized Quip client, some utilities, and timezone setting.
-
-NOTICE:  To update the host list, you need to update
-         1) HOST.
 '''
 
 """Override the local timezone in the process environment"""
@@ -43,8 +40,6 @@ class weekly_cache(object):
 
 class QuipClient4AHA(QuipClient):
     """A customized Quip client dedicated for AHA Broadcast."""
-    
-    HOST = ["Edward", "Katherine", "Sissy", "Harry"]
     
     def __init__(self, conf):
         QuipClient.__init__(self, access_token=os.environ['token'])
