@@ -13,12 +13,16 @@
 # under the License.
 
 """A Quip API client library.
+
 For full API documentation, visit https://quip.com/api/.
+
 Typical usage:
+
     client = quip.QuipClient(access_token=...)
     user = client.get_authenticated_user()
-    desktop = client.get_folder(user["desktop_folder_id"])
-    print "There are", len(desktop["children"]), "items on the desktop"
+    starred = client.get_folder(user["starred_folder_id"])
+    print "There are", len(starred["children"]), "items in your starred folder"
+
 In addition to standard getters and setters, we provide a few convenience
 methods for document editing. For example, you can use `add_to_first_list`
 to append items (in Markdown) to the first bulleted or checklist in a
@@ -28,6 +32,7 @@ given document, which is useful for automating a task list.
 import datetime
 import json
 import logging
+import ssl
 import sys
 import time
 import urllib
@@ -36,6 +41,32 @@ import xml.etree.cElementTree
 
 reload(sys)
 sys.setdefaultencoding('utf8')
+
+
+try:
+    ssl.PROTOCOL_TLSv1_1
+except AttributeError:
+    raise Exception(
+        "Using the Quip API requires an SSL library that supports TLS versions "
+        ">= 1.1; your Python + OpenSSL installation must be upgraded.")
+# After 2017-02, the Quip API HTTPS endpoint requires TLS version 1.1 or later;
+# TLS version 1.0 is disabled due to extensive security vulnerabilities.
+#
+# - macOS: At this time of this writing, macOS ships with Python 2.7 and
+#   OpenSSL, but the version of OpenSSL is outdated and only supports TLS 1.0.
+#   (This is even true of the most recent version of macOS (Sierra) with all
+#   security patches installed; see
+#   https://eclecticlight.co/2016/03/23/the-tls-mess-in-os-x-el-capitan/ .)
+#
+#   To use this module on a macOS system, you will need to install your own
+#   copy of Python and OpenSSL. Simple suggestions:
+#
+#   1) Install Homebrew from http://brew.sh; run "brew install openssl python"
+#   2) Install Miniconda from https://conda.io/miniconda.html
+#
+# - Google App Engine (GAE): Per App Engine's documentation, you must request
+#   version 2.7.11 of the "ssl" library in your app.yaml file. See:
+#   https://cloud.google.com/appengine/docs/python/sockets/ssl_support
 
 
 class QuipClient(object):
@@ -58,8 +89,10 @@ class QuipClient(object):
     def __init__(self, access_token=None, client_id=None, client_secret=None,
                  base_url=None, request_timeout=None, retry_rate_limit=False):
         """Constructs a Quip API client.
+
         If `access_token` is given, all of the API methods in the client
         will work to read and modify Quip documents.
+
         Otherwise, only `get_authorization_url` and `get_access_token`
         work, and we assume the client is for a server using the Quip API's
         OAuth endpoint.
@@ -81,6 +114,7 @@ class QuipClient(object):
                          grant_type="authorization_code",
                          refresh_token=None):
         """Exchanges a verification code for an access_token.
+
         Once the user is redirected back to your server from the URL
         returned by `get_authorization_url`, you can exchange the `code`
         argument with this method.
@@ -145,8 +179,10 @@ class QuipClient(object):
 
     def get_messages(self, thread_id, max_created_usec=None, count=None):
         """Returns the most recent messages for the given thread.
+
         To page through the messages, use max_created_usec, which is the
         sort order for the returned messages.
+
         count should be an integer indicating the number of messages you
         want returned. The maximum is 100.
         """
@@ -156,6 +192,7 @@ class QuipClient(object):
 
     def new_message(self, thread_id, content=None, **kwargs):
         """Sends a message on the given thread.
+
         `content` is plain text, not HTML.
         """
         args = {
@@ -201,11 +238,14 @@ class QuipClient(object):
 
     def new_document(self, content, format="html", title=None, member_ids=[]):
         """Creates a new document from the given content.
+
         To create a document in a folder, include the folder ID in the list
         of member_ids, e.g.,
+
             client = quip.QuipClient(...)
             user = client.get_authenticated_user()
-            client.new_document(..., member_ids=[user["archive_folder_id"]])
+            client.new_document(..., member_ids=[user["private_folder_id"]])
+
         """
         return self._fetch_json("threads/new-document", post_data={
             "content": content,
@@ -216,6 +256,7 @@ class QuipClient(object):
 
     def copy_document(self, id, title=None, member_ids=[]):
         """Creates a new document from the given thread ID.
+
         To create it in a folder, include the folder ID in member_ids.
         """
         old_thread = self.get_thread(id)
@@ -270,6 +311,7 @@ class QuipClient(object):
     def edit_document(self, thread_id, content, operation=APPEND, format="html",
                       section_id=None, **kwargs):
         """Edits the given document, adding the given content.
+
         `operation` should be one of the constants described above. If
         `operation` is relative to another section of the document, you must
         also specify the `section_id`.
@@ -286,8 +328,10 @@ class QuipClient(object):
 
     def add_to_first_list(self, thread_id, *items, **kwargs):
         """Adds the given items to the first list in the given document.
+
             client = quip.QuipClient(...)
             client.add_to_first_list(thread_id, "Try the Quip API")
+
         """
         items = [item.replace("\n", " ") for item in items]
         args = {
@@ -310,8 +354,10 @@ class QuipClient(object):
     def add_to_spreadsheet(self, thread_id, *rows, **kwargs):
         """Adds the given rows to the named (or first) spreadsheet in the
         given document.
+
             client = quip.QuipClient(...)
             client.add_to_spreadsheet(thread_id, ["5/1/2014", 2.24])
+
         """
         content = "".join(["<tr>%s</tr>" % "".join(
             ["<td>%s</td>" % cell for cell in row]) for row in rows])
@@ -331,9 +377,11 @@ class QuipClient(object):
         applies the given updates. Updates is a dict from header to
         new value. In both cases headers can either be a string that matches, or
         "A", "B", "C", 1, 2, 3 etc. If no row is found, adds a new one.
+
             client = quip.QuipClient(...)
             client.update_spreadsheet_row(
                 thread_id, "customer", "Acme", {"Billed": "6/24/2015"})
+
         """
         response = None
         spreadsheet = self.get_first_spreadsheet(thread_id)
@@ -385,9 +433,11 @@ class QuipClient(object):
 
     def toggle_checkmark(self, thread_id, item, checked=True):
         """Sets the checked state of the given list item to the given state.
+
             client = quip.QuipClient(...)
             list = client.get_first_list(thread_id)
             client.toggle_checkmark(thread_id, list[0])
+
         """
         if checked:
             item.attrib["class"] = "checked"
@@ -400,6 +450,7 @@ class QuipClient(object):
 
     def get_first_list(self, thread_id=None, document_html=None):
         """Returns the `ElementTree` of the first list in the document.
+
         The list can be any type (bulleted, numbered, or checklist).
         If `thread_id` is given, we download the document. If you have
         already downloaded the document, you can specify `document_html`
@@ -460,6 +511,7 @@ class QuipClient(object):
 
     def get_first_spreadsheet(self, thread_id=None, document_html=None):
         """Returns the `ElementTree` of the first spreadsheet in the document.
+
         If `thread_id` is given, we download the document. If you have
         already downloaded the document, you can specify `document_html`
         directly.
@@ -559,6 +611,7 @@ class QuipClient(object):
     def get_blob(self, thread_id, blob_id):
         """Returns a file-like object with the contents of the given blob from
         the given thread.
+
         The object is described in detail here:
         https://docs.python.org/2/library/urllib2.html#urllib2.urlopen
         """
@@ -588,6 +641,7 @@ class QuipClient(object):
     def put_blob(self, thread_id, blob, name=None):
         """Uploads an image or other blob to the given Quip thread. Returns an
         ID that can be used to add the image to the document of the thread.
+
         blob can be any file-like object. Requires the 'requests' module.
         """
         import requests
@@ -610,6 +664,11 @@ class QuipClient(object):
             except Exception:
                 raise error
             raise QuipError(error.response.status_code, message, error)
+
+    def new_websocket(self):
+        """Returns a websocket URL to connect to. The URL may expire if no
+        connection is initiated within 60 seconds."""
+        return self._fetch_json("websockets/new")
 
     def _fetch_json(self, path, post_data=None, **args):
         request = urllib2.Request(url=self._url(path, **args))
