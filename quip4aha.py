@@ -20,19 +20,19 @@ import datetime
 from quip import QuipClient
 
 
-class weekly_cache(object):
+class cache(object):
 
-    def __init__(self, period):
+    def __init__(self, next_expr):
         self.__c = None
-        self.__period = period
-        self.__bestbefore = datetime.date.fromtimestamp(0)
+        self.__next_expr = next_expr
+        self.__bestbefore = datetime.date.min
 
     def __call__(self, fn):
 
         def cached_fn(*args, **kwargs):
             if datetime.datetime.today().date() > self.__bestbefore:
                 self.__c = fn(*args, **kwargs)
-                self.__bestbefore = week.RecentWeekDay(self.__period)
+                self.__bestbefore = self.__next_expr()
             return self.__c
 
         return cached_fn
@@ -50,7 +50,7 @@ class QuipClient4AHA(QuipClient):
         return self.get_folder(id=self.AHABC_ID)
 
     @property
-    @weekly_cache('next Wednesday')
+    @cache(lambda:week.RecentWeekDay('next Wednesday'))
     def latest_script_ID(self):
         AHABC = self.folder_AHABC
         nxtwed = week.RecentWeekDay('next Wednesday')
