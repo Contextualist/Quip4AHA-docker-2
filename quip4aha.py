@@ -46,12 +46,17 @@ class QuipClient4AHA(QuipClient):
         self.AHABC_ID = conf["folder_id"]
     
     @property
+    @cache(lambda:datetime.date.max)
+    def self_id(self):
+        return self.get_authenticated_user()['id']
+
+    @property
     def folder_AHABC(self):
         return self.get_folder(id=self.AHABC_ID)
 
     @property
     @cache(lambda:week.RecentWeekDay('next Wednesday'))
-    def latest_script_ID(self):
+    def latest_script_id(self):
         AHABC = self.folder_AHABC
         nxtwed = week.RecentWeekDay('next Wednesday')
         title = nxtwed.strftime('%m%d')
