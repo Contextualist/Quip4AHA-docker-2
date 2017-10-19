@@ -37,7 +37,7 @@ class UpdateWeather(object):
         '''
         ====================DOC CATCHER====================
         '''
-        docID = self.client.latest_script_ID
+        docID = self.client.latest_script_id
         html = self.client.get_thread(id=docID)['html']
         
         '''
