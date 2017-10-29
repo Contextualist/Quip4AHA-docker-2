@@ -5,17 +5,17 @@ Include a customized Quip client, some utilities, and timezone setting.
 """Override the local timezone in the process environment"""
 import os
 os.environ['TZ'] = 'CST-08'
-import sys
-import argparse
-import json
 import time
 try:
     time.tzset() # for UNIX only
 except AttributeError:
     pass
-
 import datetime
-
+import sys
+import argparse
+import json
+import threading
+import websocket
 
 from quip import QuipClient
 
@@ -72,6 +72,22 @@ class QuipClient4AHA(QuipClient):
             raise InvalidOperation("Redundancy Error: More than one scripts for the next broadcast are found!", 409)
         return docID[0]
 
+    def message_feed(self, msg_handler):
+
+        def __on_message(ws, rawmsg):
+            m = json.loads(rawmsg)
+            if (m['type']!='message' or m['thread']['id']!=self.latest_script_id 
+                or self.self_id not in m['message'].get('mention_user_ids', [])):
+                return
+            m['message'].update({'thread_id':m['thread']['id']})
+            try:
+                msg_handler(m['message'])
+            except Exception as e:
+                print e
+
+        websocket_info = self.new_websocket()
+        websocket_run(websocket_info["url"], on_message=__on_message)
+
 
 def parse_config():
     psr = argparse.ArgumentParser()
@@ -108,6 +124,36 @@ def parse_config():
         template = f.read().decode('utf8')
 
     return sysconf, config, template
+
+
+def websocket_run(url, on_message):
+    HEARTBEAT_INTERVAL = 20
+
+    #TODO: log
+    def on_error(ws, err): print "websocket error:", err
+
+    def on_close(ws): print "websocket disconnected"
+
+    def on_open(ws):
+        print "websocket connected"
+
+        def run(*args):
+            while True:
+                time.sleep(HEARTBEAT_INTERVAL)
+                ws.send(json.dumps({"type": "heartbeat"}))
+
+        startd(run)
+
+    #websocket.enableTrace(True)
+    ws = websocket.WebSocketApp(
+        url, on_message=on_message, on_error=on_error, on_close=on_close, on_open=on_open)
+    ws.run_forever()
+
+
+def startd(fn):
+    d = threading.Thread(target=fn)
+    d.setDaemon(True)
+    d.start()
 
 
 class week(object):
