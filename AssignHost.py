@@ -75,7 +75,7 @@ class AssignHost(object):
         self.task = config['assign']
         for t in self.task:
             # flatten block range
-            t['range'] = list(itertools.chain.from_iterable(
+            t['parsed_range'] = list(itertools.chain.from_iterable(
                           range(int(c[0]), int(c[1] if len(c)==2 else c[0])+1)
                            for c in [c.split('-') for c in t['range'].split(',')]))
         # --------------------Portion----------------------
@@ -153,7 +153,7 @@ class AssignHost(object):
             self.HostWordCount = [0.00] * self.HostN
             self.Ans_HostWordCountRange = 1000.00
             # task blocks
-            self.taskBtoB = t['range']
+            self.taskBtoB = t['parsed_range']
             self.taskBN = len(self.taskBtoB)
             self.PWordCount = [[0]*self.PNperB[b] for b in self.taskBtoB]
             self.CutSign = [[-1]*self.PNperB[b] for b in self.taskBtoB]
