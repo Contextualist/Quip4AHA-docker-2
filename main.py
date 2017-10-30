@@ -10,7 +10,6 @@ import logging
 logging.basicConfig(level=logging.INFO)
 from datetime import datetime
 from time import sleep
-from threading import Thread
 
 from flask import Flask, request
 from schedule import Scheduler
@@ -54,21 +53,14 @@ class Scheduler4AHA(Scheduler):
         self.every().sunday.at("07:27").do(fc.get, '/updateweather')
         self.every().wednesday.at("07:27").do(fc.get, '/updateweather')
     
-    def run_alongside(self):
-        class ScheduleThread(Thread):
-            @classmethod
-            def run(cls):
-                while 1:
-                    self.run_pending()
-                    while self.idle_seconds > 0:
-                        sleep(self.idle_seconds)
-        td = ScheduleThread()
-        td.start()
+    def run(self):
+        while 1:
+            self.run_pending()
+            while self.idle_seconds > 0:
+                sleep(self.idle_seconds)
 
         
-cron = Scheduler4AHA()
-
 if __name__ == '__main__':
-    cron.run_alongside()
+    startd(Scheduler4AHA().run)
     startd(RunChatbot)
     app.run(host=sysconf['host'], port=sysconf['port'])
