@@ -73,8 +73,24 @@ class QuipClient4AHA(QuipClient):
         return docID[0]
 
     def message_feed(self, msg_handler):
+        HEARTBEAT_INTERVAL = 20
 
-        def __on_message(ws, rawmsg):
+        #TODO: log
+        def on_error(ws, err): print "websocket error:", err
+
+        def on_close(ws): print "websocket disconnected"
+
+        def on_open(ws):
+            print "websocket connected"
+
+            def run(*args):
+                while True:
+                    time.sleep(HEARTBEAT_INTERVAL)
+                    ws.send(json.dumps({"type": "heartbeat"}))
+
+            startd(run)
+
+        def on_message(ws, rawmsg):
             m = json.loads(rawmsg)
             if (m['type']!='message' or m['thread']['id']!=self.latest_script_id 
                 or self.self_id not in m['message'].get('mention_user_ids', [])):
@@ -86,7 +102,10 @@ class QuipClient4AHA(QuipClient):
                 print e
 
         websocket_info = self.new_websocket()
-        websocket_run(websocket_info["url"], on_message=__on_message)
+        #websocket.enableTrace(True)
+        ws = websocket.WebSocketApp(websocket_info["url"],
+            on_message=on_message, on_error=on_error, on_close=on_close, on_open=on_open)
+        ws.run_forever()
 
 
 def parse_config():
@@ -124,30 +143,6 @@ def parse_config():
         template = f.read().decode('utf8')
 
     return sysconf, config, template
-
-
-def websocket_run(url, on_message):
-    HEARTBEAT_INTERVAL = 20
-
-    #TODO: log
-    def on_error(ws, err): print "websocket error:", err
-
-    def on_close(ws): print "websocket disconnected"
-
-    def on_open(ws):
-        print "websocket connected"
-
-        def run(*args):
-            while True:
-                time.sleep(HEARTBEAT_INTERVAL)
-                ws.send(json.dumps({"type": "heartbeat"}))
-
-        startd(run)
-
-    #websocket.enableTrace(True)
-    ws = websocket.WebSocketApp(
-        url, on_message=on_message, on_error=on_error, on_close=on_close, on_open=on_open)
-    ws.run_forever()
 
 
 def startd(fn):
