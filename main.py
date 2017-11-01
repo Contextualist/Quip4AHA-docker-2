@@ -1,8 +1,8 @@
-from quip4aha import sysconf, startd # quip4aha has set the CST timezone
+from quip4aha import sysconf, startd, cleanupd # quip4aha has set the CST timezone
 from NewDoc import NewDoc
 from AssignHost import AssignHost
 from UpdateWeather import UpdateWeather
-from Bot import RunChatbot
+from Bot import Chatbot
 
 from traceback import format_exc
 from logging import getLogger
@@ -62,5 +62,7 @@ class Scheduler4AHA(Scheduler):
         
 if __name__ == '__main__':
     startd(Scheduler4AHA().run)
-    startd(RunChatbot)
+    cb = Chatbot()
+    startd(cb.run, cb.quit)
     app.run(host=sysconf['host'], port=sysconf['port'])
+    cleanupd()

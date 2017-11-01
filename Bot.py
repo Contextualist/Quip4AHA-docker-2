@@ -24,9 +24,14 @@ def iky_relay(msg):
 
     q4a.new_message(thread_id=msg['thread_id'], parts='[["system","%s"]]'%rpl['speechResponse'])
 
-def RunChatbot():
-    q4a.message_feed(iky_relay)
+class Chatbot(object):
+
+    def run(self):
+        q4a.message_feed(iky_relay)
+
+    def quit(self):
+        q4a.message_feed_close()
 
 
 if __name__ == "__main__":
-    RunChatbot()
+    Chatbot().run()

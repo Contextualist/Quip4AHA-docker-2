@@ -44,6 +44,7 @@ class QuipClient4AHA(QuipClient):
     def __init__(self, conf):
         QuipClient.__init__(self, access_token=os.environ['token'])
         self.AHABC_ID = conf["folder_id"]
+        self.__ws = None
     
     @property
     @cache(lambda:datetime.date.max)
@@ -103,9 +104,13 @@ class QuipClient4AHA(QuipClient):
 
         websocket_info = self.new_websocket()
         #websocket.enableTrace(True)
-        ws = websocket.WebSocketApp(websocket_info["url"],
+        self.__ws = websocket.WebSocketApp(websocket_info["url"],
             on_message=on_message, on_error=on_error, on_close=on_close, on_open=on_open)
-        ws.run_forever()
+        self.__ws.run_forever()
+
+    def message_feed_close(self):
+        if self.__ws:
+            self.__ws.close()
 
 
 def parse_config():
@@ -145,10 +150,24 @@ def parse_config():
     return sysconf, config, template
 
 
-def startd(fn):
-    d = threading.Thread(target=fn)
-    d.setDaemon(True)
-    d.start()
+class ThreadManager(object):
+
+    def __init__(self):
+        self.__cleanupq = []
+
+    def add(self, fn, cfn=None):
+        d = threading.Thread(target=fn)
+        d.setDaemon(True)
+        d.start()
+        if cfn:
+            self.__cleanupq.append(cfn)
+
+    def cleanup(self):
+        for f in self.__cleanupq:
+            f()
+
+tm = ThreadManager()
+startd, cleanupd = tm.add, tm.cleanup
 
 
 class week(object):
