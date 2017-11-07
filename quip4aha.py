@@ -156,18 +156,18 @@ def parse_config():
 class ThreadManager(object):
 
     def __init__(self):
-        self.__cleanupq = []
+        self.__cleanup = []
 
     def add(self, fn, cfn=None):
         d = threading.Thread(target=fn)
         d.setDaemon(True)
         d.start()
         if cfn:
-            self.__cleanupq.append(cfn)
+            self.__cleanup.append(cfn)
 
     def cleanup(self):
-        for f in self.__cleanupq:
-            f()
+        while self.__cleanup:
+            self.__cleanup.pop()()
 
 tm = ThreadManager()
 startd, cleanupd = tm.add, tm.cleanup
