@@ -75,21 +75,24 @@ class QuipClient4AHA(QuipClient):
 
     def message_feed(self, msg_handler):
         HEARTBEAT_INTERVAL = 20
+        HEARTBEAT_MSG = json.dumps({"type": "heartbeat"})
+        ev = threading.Event()
 
         #TODO: log
         def on_error(ws, err): print "websocket error:", err
 
-        def on_close(ws): print "websocket disconnected"
+        def on_close(ws):
+            ev.set()
+            print "websocket disconnected"
 
         def on_open(ws):
             print "websocket connected"
 
-            def run(*args):
-                while True:
-                    time.sleep(HEARTBEAT_INTERVAL)
-                    ws.send(json.dumps({"type": "heartbeat"}))
+            def run():
+                while ev.wait(HEARTBEAT_INTERVAL):
+                    ws.send(HEARTBEAT_MSG)
 
-            startd(run)
+            startd(run, ev.set)
 
         def on_message(ws, rawmsg):
             m = json.loads(rawmsg)
