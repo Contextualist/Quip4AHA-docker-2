@@ -48,9 +48,14 @@ class Scheduler4AHA(Scheduler):
     def __init__(self):
         Scheduler.__init__(self)
         fc = app.test_client() # Flask client emulator
+        cb = Chatbot()
         # Schedule uses the local timezone, which has been set to CST.
         self.every().friday.at("16:10").do(fc.get, '/newdoc')
         self.every().sunday.at("07:27").do(fc.get, '/updateweather')
+        j = self.every().tuesday.at("09:00").do(startd, cb.run, cb.quit)
+        if week.DaysTo('last Tuesday') == 0:
+            j.run()
+        self.every().tuesday.at("22:00").do(cb.quit)
         self.every().wednesday.at("07:27").do(fc.get, '/updateweather')
     
     def run(self):
@@ -62,7 +67,5 @@ class Scheduler4AHA(Scheduler):
         
 if __name__ == '__main__':
     startd(Scheduler4AHA().run)
-    cb = Chatbot()
-    startd(cb.run, cb.quit)
     app.run(host=sysconf['host'], port=sysconf['port'])
     cleanupd()
