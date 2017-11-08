@@ -45,6 +45,7 @@ class QuipClient4AHA(QuipClient):
         QuipClient.__init__(self, access_token=os.environ['token'])
         self.AHABC_ID = conf["folder_id"]
         self.__ws = None
+        self.__ws_retry = 0
     
     @property
     @cache(lambda:datetime.date.max)
@@ -74,6 +75,7 @@ class QuipClient4AHA(QuipClient):
         return docID[0]
 
     def message_feed(self, msg_handler):
+        self.__ws_retry = 3
         HEARTBEAT_INTERVAL = 20
         HEARTBEAT_MSG = json.dumps({"type": "heartbeat"})
         ev = threading.Event()
@@ -86,13 +88,13 @@ class QuipClient4AHA(QuipClient):
             print "websocket disconnected"
 
         def on_open(ws):
-            print "websocket connected"
 
             def run():
-                while ev.wait(HEARTBEAT_INTERVAL):
+                while not ev.wait(HEARTBEAT_INTERVAL):
                     ws.send(HEARTBEAT_MSG)
 
             startd(run, ev.set)
+            print "websocket connected"
 
         def on_message(ws, rawmsg):
             m = json.loads(rawmsg)
@@ -105,15 +107,19 @@ class QuipClient4AHA(QuipClient):
             except Exception as e:
                 print e
 
-        websocket_info = self.new_websocket()
-        #websocket.enableTrace(True)
-        self.__ws = websocket.WebSocketApp(websocket_info["url"],
-            on_message=on_message, on_error=on_error, on_close=on_close, on_open=on_open)
-        self.__ws.run_forever()
+        while self.__ws_retry > 0:
+            websocket_info = self.new_websocket()
+            #websocket.enableTrace(True)
+            self.__ws = websocket.WebSocketApp(websocket_info["url"],
+                on_message=on_message, on_error=on_error, on_close=on_close, on_open=on_open)
+            self.__ws.run_forever()
+            self.__ws_retry -= 1
 
     def message_feed_close(self):
+        self.__ws_retry = 0
         if self.__ws:
             self.__ws.close()
+            self.__ws = None
 
 
 def parse_config():
