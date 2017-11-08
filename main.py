@@ -1,4 +1,4 @@
-from quip4aha import sysconf, startd, cleanupd # quip4aha has set the CST timezone
+from quip4aha import sysconf, startd, cleanupd, week # quip4aha has set the CST timezone
 from NewDoc import NewDoc
 from AssignHost import AssignHost
 from UpdateWeather import UpdateWeather
