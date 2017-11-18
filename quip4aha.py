@@ -21,6 +21,9 @@ from quip import QuipClient
 
 
 class cache(object):
+    """A decorator to cache functions based on the expiration date
+    given by the callback next_expr each time
+    """
 
     def __init__(self, next_expr):
         self.__c = None
@@ -75,10 +78,14 @@ class QuipClient4AHA(QuipClient):
         return docID[0]
 
     def message_feed(self, msg_handler):
+        """message_feed maintains a blocking websocket connection 
+        with Quip real-time API, and pass Quip messages with thread ID
+        over to `msg_handler`.
+        """
+
         self.__ws_retry = 3
         HEARTBEAT_INTERVAL = 20
         HEARTBEAT_MSG = json.dumps({"type": "heartbeat"})
-        ev = threading.Event()
 
         #TODO: log
         def on_error(ws, err): print "websocket error:", err
@@ -109,6 +116,7 @@ class QuipClient4AHA(QuipClient):
 
         while self.__ws_retry > 0:
             websocket_info = self.new_websocket()
+            ev = threading.Event()
             #websocket.enableTrace(True)
             self.__ws = websocket.WebSocketApp(websocket_info["url"],
                 on_message=on_message, on_error=on_error, on_close=on_close, on_open=on_open)
@@ -160,6 +168,10 @@ def parse_config():
 
 
 class ThreadManager(object):
+    """ThreadManager starts new threads for blocking functions.
+    `cleanup` should be called at program exit to call the 
+    clean-ups for each thread LIFO.
+    """
 
     def __init__(self):
         self.__cleanup = []
