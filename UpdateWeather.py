@@ -1,6 +1,6 @@
 import re
 import json
-import urllib2
+from urllib.request import urlopen # py2, urllib2
 from quip4aha import q4a, week, InvalidOperation
 
 class UpdateWeather(object):
@@ -26,7 +26,7 @@ class UpdateWeather(object):
             raise InvalidOperation("Unable to get the weather for Wednesday: "
                                    "WunderStation only gives prediction for today and 3 days ahead. \n"
                                    "But it's {} days to next Wednesday.".format(self.NextNDay))
-        response = json.loads(urllib2.urlopen(
+        response = json.loads(urlopen(
             "http://api.wunderground.com/api/01702baefa3fbf8e/forecast/q/zmw:00000.1.59287.json").read())
         data = response['forecast']['simpleforecast']['forecastday'][self.NextNDay]
         self.Condition = self.SIMP.get(data['conditions'], data['conditions'].lower())

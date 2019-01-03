@@ -2,7 +2,7 @@ from quip4aha import sysconf, startd, cleanupd, week # quip4aha has set the CST 
 from NewDoc import NewDoc
 from AssignHost import AssignHost
 from UpdateWeather import UpdateWeather
-from Bot import Chatbot
+#from Bot import Chatbot # __main__ only
 
 from traceback import format_exc
 from logging import getLogger
@@ -48,6 +48,7 @@ class Scheduler4AHA(Scheduler):
     def __init__(self):
         Scheduler.__init__(self)
         fc = app.test_client() # Flask client emulator
+        from Bot import Chatbot
         cb = Chatbot()
         # Schedule uses the local timezone, which has been set to CST.
         self.every().friday.at("16:10").do(fc.get, '/newdoc')

@@ -1,4 +1,3 @@
-import urllib2
 from quip4aha import week, q4a, template, InvalidOperation
 
 class NewDoc(object):

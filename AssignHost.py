@@ -12,7 +12,7 @@ For those who are new to Python, remember,
    address of the list, use a=copy.deepcopy(b), instead of a=b.
 """
 from quip4aha import q4a, config, InvalidOperation
-from HTMLParser import HTMLParser
+from html.parser import HTMLParser # for py2, pip install future
 import copy
 import re
 import itertools
@@ -102,7 +102,7 @@ class AssignHost(object):
         b = self.taskBtoB[task_b]
         next1s, wordsum1 = (s+1)%self.SNperB[b], self.SWordCount[b][s]
         nextxs, wordsumx = 0, sum(self.SWordCount[b][s:])
-        for h in xrange(self.HostN):
+        for h in range(self.HostN):
             if h == last_assignee:
                 if s == 0: continue  # cross block, no
                 p = lastp
@@ -131,7 +131,7 @@ class AssignHost(object):
         # ====================DOC PRE-PROCESSOR====================
         if raw_doc.find(r'<i>//') != -1:
             raise InvalidOperation("Redundancy Warning: The script has already been divided and assigned!")
-        clean_doc = raw_doc.decode('utf-8').encode('ascii', 'ignore')  # clear all non-ascii
+        clean_doc = raw_doc.encode('ascii', 'ignore').decode('ascii')  # clear all non-ascii
         clean_doc = re.sub(r'<h1.+</h1>', '', clean_doc, count=1)  # delete the header
 
         parser = MyHTMLParser(self.KeyWord, self.BN)
@@ -139,10 +139,10 @@ class AssignHost(object):
 
         # =====================SETTINGS====================
         self.SWordCount = parser.SWordCount
-        self.SWordCount = [[swc*self.BWeight[b] for swc in self.SWordCount[b]] for b in xrange(self.BN)]  # B[S[]], weighted
+        self.SWordCount = [[swc*self.BWeight[b] for swc in self.SWordCount[b]] for b in range(self.BN)]  # B[S[]], weighted
         self.SID = parser.SID
         self.SNperB = [len(b) for b in self.SWordCount]  # B[SN]
-        self.PNperB = [min(self.PNperB[i], self.SNperB[i]) for i in xrange(self.BN)]
+        self.PNperB = [min(self.PNperB[i], self.SNperB[i]) for i in range(self.BN)]
 
         for t in self.task:
             # task hosts
@@ -169,7 +169,7 @@ class AssignHost(object):
             # ====================POST DIVISIONS====================
             last_pos = 0
             for tb, b in enumerate(self.taskBtoB):
-                for p in xrange(self.PNperB[b]):
+                for p in range(self.PNperB[b]):
                     if self.Ans_CutSign[tb][p] == -1:
                         break
                     m = re.compile(r"<p id='%s' class='line'>(.+?)</p>" % self.SID[b][self.Ans_CutSign[tb][p]]).search(raw_doc, last_pos)

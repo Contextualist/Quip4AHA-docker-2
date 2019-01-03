@@ -10,6 +10,8 @@ try:
     time.tzset() # for UNIX only
 except AttributeError:
     pass
+import ssl # disable SSL cert verification for now
+ssl._create_default_https_context = ssl._create_unverified_context
 import datetime
 import sys
 import argparse
@@ -88,11 +90,11 @@ class QuipClient4AHA(QuipClient):
         HEARTBEAT_MSG = json.dumps({"type": "heartbeat"})
 
         #TODO: log
-        def on_error(ws, err): print "websocket error:", err
+        def on_error(ws, err): print("websocket error:", err)
 
         def on_close(ws):
             ev.set()
-            print "websocket disconnected"
+            print("websocket disconnected")
 
         def on_open(ws):
 
@@ -101,7 +103,7 @@ class QuipClient4AHA(QuipClient):
                     ws.send(HEARTBEAT_MSG)
 
             startd(run, ev.set)
-            print "websocket connected"
+            print("websocket connected")
 
         def on_message(ws, rawmsg):
             m = json.loads(rawmsg)
@@ -112,7 +114,7 @@ class QuipClient4AHA(QuipClient):
             try:
                 msg_handler(m['message'])
             except Exception as e:
-                print e
+                print(e)
 
         while self.__ws_retry > 0:
             websocket_info = self.new_websocket()
@@ -148,18 +150,18 @@ def parse_config():
             confpath = os.path.dirname(conffile)
             break
     else:
-        print "config file not found, exit."
+        print("config file not found, exit.")
         sys.exit(1)
     with open(conffile, "rb") as f:
         try:
             config = json.loads(f.read().decode('utf8'))
         except ValueError as e:
-            print ('found an error while parsing config.json: %s' % e.message)
+            print('found an error while parsing config.json: %s' % e.message)
             sys.exit(1)
 
     tplfile = config.get("template", confpath+"/template.html")
     if not os.path.exists(tplfile):
-        print "template file not found, exit."
+        print("template file not found, exit.")
         sys.exit(1)
     with open(tplfile, "rb") as f:
         template = f.read().decode('utf8')
